@@ -2,40 +2,27 @@
   "use strict";
 
   const html = document.documentElement;
-  const INBOX = "/direct/inbox/";
 
   const isHome = () => location.pathname === "/";
   // Page Explorer et page Recherche.
   const isExplore = () => /^\/explore\/(?:search\/?)?$/.test(location.pathname);
   const isReels = () => /^\/reels(?:\/|$)/.test(location.pathname);
+  const isDirect = () => /^\/direct(?:\/|$)/.test(location.pathname);
 
-  // ---------- 1. Redirections ----------
-  // Reels : fil infini, renvoyé vers la messagerie. Les liens /reel/ID restent ouverts.
-  // Accueil : renvoyé vers la messagerie. Au chargement d'une page, background.js
-  // s'en charge déjà avant même la requête ; ici on traite le démarrage de
-  // secours et surtout la navigation interne (clic sur "Accueil", sur le logo…).
-  let lastRedirect = 0;
-
-  function goToInbox() {
-    const now = Date.now();
-    if (now - lastRedirect < 1500) return;
-    lastRedirect = now;
-
-    // Navigation interne instantanée, sans recharger la page, quand le lien existe.
-    const link = document.querySelector('a[href="' + INBOX + '"]');
-    if (link) {
-      link.click();
-      setTimeout(() => {
-        if (isHome() || isReels()) location.replace(INBOX);
-      }, 800);
-    } else {
-      location.replace(INBOX);
-    }
+  // ---------- 1. Page Reels : on ne l'affiche jamais ----------
+  // /reels/… est un fil infini : on renvoie vers l'accueil (qui reste vide).
+  // Les liens individuels /reel/ID restent ouverts.
+  function leaveReels() {
+    if (!isReels()) return false;
+    location.replace("/");
+    return true;
   }
+
+  if (leaveReels()) return;
 
   // ---------- Drapeaux de page ----------
   // Posés immédiatement, avant le premier affichage : hide.css masque alors
-  // <main> sans que rien n'apparaisse, même un instant.
+  // <main> sur l'accueil sans que rien n'apparaisse, même un instant.
   function updateFlags() {
     html.toggleAttribute("data-isf-home", isHome());
     html.toggleAttribute("data-isf-explore", isExplore());
@@ -46,10 +33,13 @@
   // Les classes d'Instagram sont générées et changent sans cesse : on se repère
   // à des liens (href), des rôles ou des libellés, jamais aux noms de classes.
   const SUGGEST_LINK = 'a[href="/explore/people/"]';
+  const THREAD_LINK = 'a[href^="/direct/t/"]';
   const SUGGEST_TITLE =
     /^(suggested for you|suggestions for you|suggestions pour vous)$/i;
   const EXPLORE_TITLES = /^(pour vous|personnalis[ée]e?s?|for you|personali[sz]ed)$/i;
-  const HOME_LABEL = /^(home|accueil)$/i;
+  const NOT_PERSONALIZED = /non[\s-]*personnalis|not[\s-]*personali[sz]/i;
+  const NOTES_LABEL =
+    /^(notes?|votre note|your note|ajouter une note|add (?:a )?note|laisser une note|leave a note|note(?:\.{3}|…))$/i;
 
   const FOOTER_LINKS = [
     'a[href*="about.meta.com"]',
@@ -75,19 +65,6 @@
     el.removeAttribute("data-isf");
     el.style.removeProperty("display");
     routeHidden.delete(el);
-  }
-
-  // Remonte jusqu'à l'élément de menu qui ne contient que ce lien.
-  function hideNavItem(a) {
-    let el = a;
-    while (
-      el.parentElement &&
-      el.parentElement !== document.body &&
-      el.parentElement.querySelectorAll("a[href]").length === 1
-    ) {
-      el = el.parentElement;
-    }
-    if (!el.hasAttribute("data-isf")) hide(el, false);
   }
 
   // ---------- 2. Colonne de droite hors de <main> ----------
@@ -124,7 +101,7 @@
 
   // ---------- 3. Explorer / Recherche ----------
   // Grille masquée (barre de recherche conservée), roue de chargement et
-  // titres "Pour vous" / "Personnalisé" supprimés.
+  // titres "Pour vous" / "Personnalisé" / "Non personnalisé" supprimés.
   function hideExplore(main) {
     const tile = main.querySelector('a[href^="/p/"], a[href^="/reel/"]');
     if (tile) {
@@ -153,32 +130,73 @@
       if (!el.hasAttribute("data-isf")) hide(el, true);
     }
 
-    for (const t of main.querySelectorAll("h1, h2, h3, span")) {
-      if (
-        t.children.length === 0 &&
-        EXPLORE_TITLES.test(t.textContent.trim()) &&
-        !t.hasAttribute("data-isf")
-      ) {
+    for (const t of main.querySelectorAll("h1, h2, h3, span, div")) {
+      if (t.children.length !== 0 || t.hasAttribute("data-isf")) continue;
+      const text = t.textContent.trim();
+      if (EXPLORE_TITLES.test(text) || (text.length < 80 && NOT_PERSONALIZED.test(text))) {
         hide(t, true);
       }
     }
   }
 
-  // ---------- 4. Entrées "Reels" et "Accueil" des menus ----------
-  function hideNavEntries() {
-    for (const a of document.querySelectorAll('a[href="/reels/"]')) hideNavItem(a);
+  // ---------- 4. Messagerie : section "Notes" de la colonne des conversations ----------
+  // On repère le libellé, puis on masque le bloc situé au-dessus de la liste des
+  // conversations. Si la liste arrive après coup à l'intérieur de ce qu'on a
+  // masqué, on rétablit et on recalcule.
+  let notesBlock = null;
 
-    // "Accueil" : par libellé, sinon tous les liens "/" sauf le premier (le logo).
-    const homes = [...document.querySelectorAll('a[href="/"]')];
-    const labelled = homes.filter((a) => {
-      const svg = a.querySelector("svg[aria-label]");
-      const label = (svg && svg.getAttribute("aria-label")) || a.textContent || "";
-      return HOME_LABEL.test(label.trim());
-    });
-    for (const a of labelled.length ? labelled : homes.slice(1)) hideNavItem(a);
+  function hideDirectNotes() {
+    if (notesBlock && notesBlock.querySelector(THREAD_LINK)) {
+      show(notesBlock);
+      notesBlock = null;
+    }
+    if (notesBlock && notesBlock.isConnected) return;
+    notesBlock = null;
+
+    const candidates = document.querySelectorAll("span, h1, h2, h3, div[aria-label], button[aria-label]");
+    for (const t of candidates) {
+      if (t.closest("nav, [role='navigation']") || t.hasAttribute("data-isf")) continue;
+      if (t.children.length !== 0 && !t.hasAttribute("aria-label")) continue;
+      const label = (t.getAttribute("aria-label") || t.textContent || "").trim();
+      if (!NOTES_LABEL.test(label)) continue;
+
+      let el = t;
+      let steps = 0;
+      while (el.parentElement && el.parentElement !== document.body && steps < 8) {
+        const p = el.parentElement;
+        if (
+          p.querySelector(THREAD_LINK) ||
+          p.matches("main, [role='main']") ||
+          p.querySelector("nav, [role='navigation']")
+        ) {
+          break;
+        }
+        el = p;
+        steps++;
+      }
+      if (el === document.body || el.matches("main, [role='main']")) continue;
+      notesBlock = el;
+      hide(el, true);
+      return;
+    }
   }
 
-  // ---------- 5. Mentions de bas de page (Meta, À propos, Aide, Confidentialité…) ----------
+  // ---------- 5. Entrée "Reels" des menus ----------
+  function hideReelsNav() {
+    for (const a of document.querySelectorAll('a[href="/reels/"]')) {
+      let el = a;
+      while (
+        el.parentElement &&
+        el.parentElement !== document.body &&
+        el.parentElement.querySelectorAll("a[href]").length === 1
+      ) {
+        el = el.parentElement;
+      }
+      if (!el.hasAttribute("data-isf")) hide(el, false);
+    }
+  }
+
+  // ---------- 6. Mentions de bas de page (Meta, À propos, Aide, Confidentialité…) ----------
   // Le CSS masque déjà les liens ; on retire aussi le bloc qui les contient
   // (séparateurs, mention "© Instagram from Meta").
   let lastFooterScan = 0;
@@ -219,33 +237,27 @@
   let lastPath = null;
 
   function tick() {
+    if (leaveReels()) return;
     ticks++;
     updateFlags();
-
-    if (isHome() || isReels()) {
-      if (isHome()) hideRightColumn(); // le temps de la redirection interne
-      goToInbox();
-      return;
-    }
 
     // Instagram est une application monopage : à chaque changement de page,
     // on rétablit ce qui avait été masqué pour l'ancienne page.
     if (location.pathname !== lastPath) {
       lastPath = location.pathname;
       for (const el of [...routeHidden]) show(el);
+      notesBlock = null;
     }
 
+    if (isHome()) hideRightColumn();
     if (isExplore()) {
       const main = document.querySelector("main");
       if (main) hideExplore(main);
     }
-    hideNavEntries();
+    if (isDirect()) hideDirectNotes();
+    hideReelsNav();
     hideFooter();
   }
-
-  // Redirection de secours dès le démarrage (background.js a normalement
-  // déjà redirigé avant la requête).
-  if (isHome() || isReels()) goToInbox();
 
   // Dès qu'Instagram modifie la page, on réagit avant l'affichage suivant
   // (les rappels de MutationObserver passent avant le rendu) : rien ne clignote.
