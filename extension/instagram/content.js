@@ -7,7 +7,6 @@
   // Page Explorer et page Recherche.
   const isExplore = () => /^\/explore\/(?:search\/?)?$/.test(location.pathname);
   const isReels = () => /^\/reels(?:\/|$)/.test(location.pathname);
-  const isDirect = () => /^\/direct(?:\/|$)/.test(location.pathname);
 
   // ---------- 1. Page Reels : on ne l'affiche jamais ----------
   // /reels/… est un fil infini : on renvoie vers l'accueil (qui reste vide).
@@ -26,7 +25,6 @@
   function updateFlags() {
     html.toggleAttribute("data-isf-home", isHome());
     html.toggleAttribute("data-isf-explore", isExplore());
-    html.toggleAttribute("data-isf-direct", isDirect());
   }
   updateFlags();
 
@@ -34,13 +32,10 @@
   // Les classes d'Instagram sont générées et changent sans cesse : on se repère
   // à des liens (href), des rôles ou des libellés, jamais aux noms de classes.
   const SUGGEST_LINK = 'a[href="/explore/people/"]';
-  const THREAD_LINK = 'a[href^="/direct/t/"]';
   const SUGGEST_TITLE =
     /^(suggested for you|suggestions for you|suggestions pour vous)$/i;
   const EXPLORE_TITLES = /^(pour vous|personnalis[ée]e?s?|for you|personali[sz]ed)$/i;
   const NOT_PERSONALIZED = /non[\s-]*personnalis|not[\s-]*personali[sz]/i;
-  const NOTES_LABEL =
-    /^(notes?|votre note|your note|ajouter une note|add (?:a )?note|laisser une note|leave a note|note(?:\.{3}|…))$/i;
 
   const FOOTER_LINKS = [
     'a[href*="about.meta.com"]',
@@ -157,89 +152,7 @@
     }
   }
 
-  // ---------- 4. Messagerie : section "Notes" de la colonne des conversations ----------
-  // Deux repères, l'un ou l'autre suffit :
-  //  - les classes du bloc (les classes d'Instagram décrivent chacune une seule
-  //    règle de style, par exemple "x78zum5" = display:flex : elles restent
-  //    stables d'une version à l'autre) ; le bloc est celui qui ne contient pas
-  //    de conversation mais précède la liste des conversations ;
-  //  - le libellé ("Notes", "Votre note"…), en remontant jusqu'au bloc qui
-  //    précède la liste.
-  // Si la liste arrive après coup à l'intérieur de ce qu'on a masqué, on
-  // rétablit et on recalcule.
-  const NOTES_CLASSES = [
-    "x1qjc9v5", "x9f619", "x78zum5", "xdt5ytf", "xln7xf2",
-    "xk390pu", "x5yr21d", "x1n2onr6", "x11njtxf", "xh8yej3",
-  ];
-  const NOTES_SELECTOR = "." + NOTES_CLASSES.join(".");
-  const notesHidden = new Set();
-
-  function hideDirectNotes() {
-    for (const el of [...notesHidden]) {
-      if (!el.isConnected) {
-        notesHidden.delete(el);
-      } else if (el.querySelector(THREAD_LINK)) {
-        show(el);
-        notesHidden.delete(el);
-      }
-    }
-
-    const firstThread = document.querySelector(THREAD_LINK);
-
-    // a) par les classes : avant la liste des conversations, sans conversation
-    //    ni champ de saisie à l'intérieur, avec des avatars.
-    if (firstThread) {
-      const found = [...document.querySelectorAll(NOTES_SELECTOR)].filter(
-        (el) =>
-          !el.hasAttribute("data-isf") &&
-          !el.closest("nav, [role='navigation']") &&
-          !el.querySelector(THREAD_LINK + ", input, textarea, [contenteditable]") &&
-          el.querySelector("img") &&
-          el.parentElement &&
-          el.parentElement.contains(firstThread) &&
-          el.compareDocumentPosition(firstThread) & Node.DOCUMENT_POSITION_FOLLOWING
-      );
-      // On garde les blocs les plus grands (on ignore ceux qui en contiennent déjà un).
-      for (const el of found) {
-        if (found.some((o) => o !== el && o.contains(el))) continue;
-        hide(el, true);
-        notesHidden.add(el);
-      }
-    }
-
-    // b) par le libellé
-    if (notesHidden.size) return;
-    const candidates = document.querySelectorAll(
-      "span, h1, h2, h3, div[aria-label], button[aria-label]"
-    );
-    for (const t of candidates) {
-      if (t.closest("nav, [role='navigation']") || t.hasAttribute("data-isf")) continue;
-      if (t.children.length !== 0 && !t.hasAttribute("aria-label")) continue;
-      const label = (t.getAttribute("aria-label") || t.textContent || "").trim();
-      if (!NOTES_LABEL.test(label)) continue;
-
-      let el = t;
-      let steps = 0;
-      while (el.parentElement && el.parentElement !== document.body && steps < 8) {
-        const p = el.parentElement;
-        if (
-          p.querySelector(THREAD_LINK) ||
-          p.matches("main, [role='main']") ||
-          p.querySelector("nav, [role='navigation']")
-        ) {
-          break;
-        }
-        el = p;
-        steps++;
-      }
-      if (el === document.body || el.matches("main, [role='main']")) continue;
-      hide(el, true);
-      notesHidden.add(el);
-      return;
-    }
-  }
-
-  // ---------- 5. Entrée "Reels" des menus ----------
+  // ---------- 4. Entrée "Reels" des menus ----------
   function hideReelsNav() {
     for (const a of document.querySelectorAll('a[href="/reels/"]')) {
       let el = a;
@@ -254,40 +167,71 @@
     }
   }
 
-  // ---------- 6. Mentions de bas de page (Meta, À propos, Aide, Confidentialité…) ----------
-  // Le CSS masque déjà les liens ; on retire aussi le bloc qui les contient
-  // (séparateurs, mention "© Instagram from Meta").
+  // ---------- 5. Accueil : mentions de bas de page et choix de la langue ----------
+  // L'accueil étant vide, ces blocs remonteraient en haut de la page. On les
+  // repère (liens Meta / À propos / Aide / Confidentialité…, sélecteur de langue)
+  // et on les épingle en bas de la fenêtre ; hide.css ne s'applique qu'à l'accueil.
   let lastFooterScan = 0;
 
-  function hideFooter() {
-    const now = Date.now();
-    if (now - lastFooterScan < 300) return;
-    lastFooterScan = now;
-
-    const links = document.querySelectorAll(FOOTER_LINKS);
-    if (links.length < 3) return;
-
-    // Plus petit conteneur regroupant au moins trois de ces liens...
-    let el = links[0];
-    while (
-      el.parentElement &&
-      el.parentElement !== document.body &&
-      el.querySelectorAll(FOOTER_LINKS).length < 3
-    ) {
-      el = el.parentElement;
-    }
-    // ...étendu tant qu'il reste un simple bloc de bas de page.
+  // Plus petit bloc de bas de page contenant l'élément, étendu tant qu'il reste
+  // un simple bloc de pied de page.
+  function footerBlock(start) {
+    let el = start;
     while (el.parentElement && el.parentElement !== document.body) {
       const p = el.parentElement;
       if (
-        p.querySelector('main, nav, [role="navigation"], [role="main"], article, input') ||
+        p.querySelector('main, nav, [role="navigation"], [role="main"], article') ||
         p.querySelectorAll("a[href]").length > 14
       ) {
         break;
       }
       el = p;
     }
-    if (el !== document.body && !el.hasAttribute("data-isf")) hide(el, false);
+    return el;
+  }
+
+  function pinFooter() {
+    const now = Date.now();
+    if (now - lastFooterScan < 300) return;
+    lastFooterScan = now;
+
+    const starts = [];
+    const links = document.querySelectorAll(FOOTER_LINKS);
+    if (links.length >= 3) {
+      // Plus petit conteneur regroupant au moins trois de ces liens.
+      let el = links[0];
+      while (
+        el.parentElement &&
+        el.parentElement !== document.body &&
+        el.querySelectorAll(FOOTER_LINKS).length < 3
+      ) {
+        el = el.parentElement;
+      }
+      starts.push(el);
+    }
+    for (const sel of document.querySelectorAll("select")) starts.push(sel);
+
+    const blocks = new Set();
+    for (const start of starts) {
+      if (start === document.body) continue;
+      if (start.tagName === "SELECT" && start.closest("main, nav, [role='main']")) continue;
+      const block = footerBlock(start);
+      if (block !== document.body) blocks.add(block);
+    }
+    // On n'épingle que les blocs les plus grands (pas un bloc déjà inclus dans un autre).
+    const pinned = [...blocks].filter(
+      (el) => ![...blocks].some((o) => o !== el && o.contains(el))
+    );
+    // Si les liens et le choix de la langue sont dans deux blocs distincts, on les
+    // empile : la langue tout en bas, les liens juste au-dessus.
+    const hasSelect = (el) => el.tagName === "SELECT" || !!el.querySelector("select");
+    pinned.sort((a, b) => Number(hasSelect(b)) - Number(hasSelect(a)));
+    let offset = 0;
+    for (const el of pinned) {
+      el.setAttribute("data-isf-pin", "");
+      el.style.setProperty("bottom", offset + "px", "important");
+      offset += el.getBoundingClientRect().height;
+    }
   }
 
   // ---------- Boucle ----------
@@ -304,7 +248,10 @@
     if (location.pathname !== lastPath) {
       lastPath = location.pathname;
       for (const el of [...routeHidden]) show(el);
-      notesHidden.clear();
+      for (const el of document.querySelectorAll("[data-isf-pin]")) {
+        el.removeAttribute("data-isf-pin");
+        el.style.removeProperty("bottom");
+      }
     }
 
     if (isHome()) hideRightColumn();
@@ -312,9 +259,8 @@
       const main = document.querySelector("main");
       if (main) hideExplore(main);
     }
-    if (isDirect()) hideDirectNotes();
     hideReelsNav();
-    hideFooter();
+    if (isHome()) pinFooter();
   }
 
   // Dès qu'Instagram modifie la page, on réagit avant l'affichage suivant
