@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
-  "name": "Sans feed (Reddit et YouTube)",
+  "name": "Sans feed (Reddit, YouTube, Instagram)",
   "version": "1.0.0",
-  "description": "Reddit : feeds, suggestions de recherche, boutons et barre latérale masqués. YouTube : feed d'accueil, barre latérale et Shorts masqués.",
+  "description": "Reddit : feeds, suggestions de recherche, boutons et barre latérale masqués. YouTube : feed d'accueil, barre latérale et Shorts masqués. Instagram : feed, suggestions de profils, grille Explorer et Reels masqués.",
   "icons": {
     "48": "icon.svg",
     "96": "icon.svg"
@@ -31,6 +31,19 @@
       ],
       "js": [
         "youtube/content.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "*://www.instagram.com/*",
+        "*://instagram.com/*"
+      ],
+      "css": [
+        "instagram/hide.css"
+      ],
+      "js": [
+        "instagram/content.js"
       ],
       "run_at": "document_start"
     }

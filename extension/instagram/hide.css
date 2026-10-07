@@ -1,0 +1,20 @@
+/* ---------- Feed de la page d'accueil ----------
+   data-isf-home est posé sur <html> par content.js uniquement sur "/".
+   Le reste (colonne du feed, stories, suggestions) est traité par content.js. */
+
+html[data-isf-home] main article {
+  display: none !important;
+}
+
+/* ---------- Page Explorer : grille masquée, recherche conservée ---------- */
+
+html[data-isf-explore] main a[href^="/p/"],
+html[data-isf-explore] main a[href^="/reel/"] {
+  display: none !important;
+}
+
+/* ---------- Reels dans la barre latérale gauche (et la barre mobile) ---------- */
+
+a[href="/reels/"] {
+  display: none !important;
+}

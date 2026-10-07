@@ -67,7 +67,22 @@ flex-left-nav-container,
   display: none !important;
 }
 
-/* Récupère la largeur libérée par la barre latérale. */
-shreddit-app .grid-container.grid {
-  grid-template-columns: minmax(0, 1fr) !important;
+.left-sidebar {
+  width: 0 !important;
+}
+
+/* Récupère la largeur libérée par la barre latérale : le contenu occupe
+   les deux colonnes de la grille (celle de la barre latérale et la sienne). */
+.m\:col-start-2 {
+  grid-column: 1 / span 2 !important;
+}
+
+/* Centre le fil (et la colonne de droite, quand elle existe) dans la page. */
+#subgrid-container {
+  margin-inline: auto !important;
+}
+
+#subgrid-container > div:nth-of-type(1) {
+  justify-content: center !important;
+  margin-inline: auto !important;
 }

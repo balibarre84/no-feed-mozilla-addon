@@ -1,9 +1,10 @@
 # No feed – extension Firefox
 
-Masque les feeds et distractions de Reddit et de YouTube.
+Masque les feeds et distractions de Reddit, YouTube et Instagram.
 
 - **Reddit** : feeds (accueil, Popular, All, News, subreddits généralistes), suggestions de recherche, boutons « Créer un post », « Advertise » et chat, barre latérale gauche.
 - **YouTube** : feed de l'accueil, barre latérale gauche, Shorts.
+- **Instagram** : feed de l'accueil, suggestions de profils, grille de la page Explorer (recherche conservée), entrée et page Reels.
 
 Le code de l'extension est dans `extension/`.
 
