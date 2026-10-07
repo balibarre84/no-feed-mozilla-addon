@@ -1,22 +1,41 @@
 /* ---------- Page d'accueil : rien n'est affiché ----------
-   data-isf-home est posé sur <html> par content.js dès le chargement, et la
-   feuille de style est injectée avant le premier affichage : aucun flash.
-   Tout le contenu central (stories, feed, compte et suggestions) est dans
-   <main> ; seule la barre latérale gauche reste visible. */
+   L'accueil est redirigé vers la messagerie (background.js). Ces règles ne
+   servent que lors d'une navigation interne, le temps de la redirection :
+   data-isf-home est posé sur <html> par content.js dès le chargement. */
 
 html[data-isf-home] main {
   display: none !important;
 }
 
-/* ---------- Page Explorer : grille masquée, recherche conservée ---------- */
+/* ---------- Pages Explorer et Recherche ----------
+   Grille masquée, barre de recherche conservée, roue de chargement supprimée
+   (les titres "Pour vous" / "Personnalisé" sont retirés par content.js). */
 
 html[data-isf-explore] main a[href^="/p/"],
-html[data-isf-explore] main a[href^="/reel/"] {
+html[data-isf-explore] main a[href^="/reel/"],
+html[data-isf-explore] [role="progressbar"],
+html[data-isf-explore] svg[aria-label="Loading..."],
+html[data-isf-explore] svg[aria-label="Chargement..."],
+html[data-isf-explore] svg[aria-label="Chargement…"] {
   display: none !important;
 }
 
 /* ---------- Reels dans la barre latérale gauche (et la barre mobile) ---------- */
 
 a[href="/reels/"] {
+  display: none !important;
+}
+
+/* ---------- Mentions de bas de page (Meta, À propos, Aide, Confidentialité…) ---------- */
+
+a[href*="about.meta.com"],
+a[href*="help.instagram.com"],
+a[href*="privacycenter.instagram.com"],
+a[href*="developers.facebook.com"],
+a[href*="meta.com/meta-verified"],
+a[href^="/about/"],
+a[href^="/legal/"],
+a[href*="instagram.com/legal/"],
+a[href^="/explore/locations/"] {
   display: none !important;
 }

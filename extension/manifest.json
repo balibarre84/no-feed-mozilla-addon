@@ -2,10 +2,21 @@
   "manifest_version": 2,
   "name": "No feed",
   "version": "1.0.0",
-  "description": "Reddit : feeds, suggestions de recherche, boutons et barre latérale masqués. YouTube : feed d'accueil, barre latérale et Shorts masqués. Instagram : feed, suggestions de profils, grille Explorer et Reels masqués.",
+  "description": "Reddit : feeds, suggestions de recherche, boutons et barre latérale masqués. YouTube : feed d'accueil, barre latérale et Shorts masqués. Instagram : accueil, feed, Reels et grille Explorer masqués, redirection vers la messagerie.",
   "icons": {
     "48": "icon.svg",
     "96": "icon.svg"
+  },
+  "permissions": [
+    "webRequest",
+    "webRequestBlocking",
+    "*://www.instagram.com/*",
+    "*://instagram.com/*"
+  ],
+  "background": {
+    "scripts": [
+      "instagram/background.js"
+    ]
   },
   "content_scripts": [
     {

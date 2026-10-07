@@ -4,7 +4,7 @@ Masque les feeds et distractions de Reddit, YouTube et Instagram.
 
 - **Reddit** : feeds (accueil, Popular, All, News, subreddits généralistes), suggestions de recherche, boutons « Créer un post », « Advertise » et chat, barre latérale gauche.
 - **YouTube** : feed de l'accueil, barre latérale gauche, Shorts.
-- **Instagram** : feed de l'accueil, suggestions de profils, grille de la page Explorer (recherche conservée), entrée et page Reels.
+- **Instagram** : accueil redirigé immédiatement vers la messagerie (avant même le chargement de la page), feed et suggestions de profils masqués, grille Explorer masquée (recherche conservée, sans roue de chargement ni titres « Pour vous » et « Personnalisé »), entrée et page Reels supprimées, mentions de bas de page (Meta, À propos…) masquées.
 
 Le code de l'extension est dans `extension/`.
 
