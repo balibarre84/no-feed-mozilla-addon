@@ -29,10 +29,10 @@ jobs:
         run: |
           V="${GITHUB_REF_NAME#v}"
           ID=$(jq -r '.browser_specific_settings.gecko.id' extension/manifest.json)
-          mv dist/*.xpi "sans-feed-$V.xpi"
-          gh release create "$GITHUB_REF_NAME" "sans-feed-$V.xpi" --title "$GITHUB_REF_NAME" --notes ""
+          mv dist/*.xpi "no-feed-$V.xpi"
+          gh release create "$GITHUB_REF_NAME" "no-feed-$V.xpi" --title "$GITHUB_REF_NAME" --notes ""
           jq -n --arg id "$ID" --arg v "$V" \
-            --arg url "https://github.com/${{ github.repository }}/releases/download/$GITHUB_REF_NAME/sans-feed-$V.xpi" \
+            --arg url "https://github.com/${{ github.repository }}/releases/download/$GITHUB_REF_NAME/no-feed-$V.xpi" \
             '{addons:{($id):{updates:[{version:$v,update_link:$url}]}}}' > updates.json
           git config user.name "github-actions"
           git config user.email "actions@github.com"

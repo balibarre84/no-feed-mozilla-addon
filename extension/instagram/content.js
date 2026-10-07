@@ -8,7 +8,7 @@
   const isReels = () => /^\/reels(?:\/|$)/.test(location.pathname);
 
   // ---------- 1. Page Reels : on ne l'affiche jamais ----------
-  // /reels/… est un fil infini : on renvoie vers l'accueil (dont le feed est masqué).
+  // /reels/… est un fil infini : on renvoie vers l'accueil (qui reste vide).
   // Les liens individuels /reel/ID restent ouverts.
   function leaveReels() {
     if (!isReels()) return false;
@@ -17,6 +17,15 @@
   }
 
   if (leaveReels()) return;
+
+  // ---------- Drapeaux de page ----------
+  // Posés immédiatement, avant le premier affichage : hide.css masque alors
+  // <main> sur l'accueil sans que rien n'apparaisse, même un instant.
+  function updateFlags() {
+    html.toggleAttribute("data-isf-home", isHome());
+    html.toggleAttribute("data-isf-explore", isExplore());
+  }
+  updateFlags();
 
   // ---------- Utilitaires ----------
   // Les classes d'Instagram sont générées et changent sans cesse : on se repère
@@ -40,43 +49,18 @@
     routeHidden.delete(el);
   }
 
-  // ---------- 2. Accueil : colonne du feed (stories et publications) ----------
-  // On masque la colonne qui contient les publications mais pas la colonne de
-  // droite (compte, suggestions), qui est traitée à part. Masquer le conteneur
-  // entier, et non les seules publications, empêche aussi le défilement infini
-  // de continuer à charger des pages invisibles.
-  let feedColumn = null;
-
-  function hideHomeFeed(main) {
-    const sideLink = main.querySelector(SUGGEST_LINK);
-
-    // La colonne de droite est apparue après coup à l'intérieur de ce qu'on a
-    // masqué : on rétablit et on recalcule.
-    if (feedColumn && sideLink && feedColumn.contains(sideLink)) {
-      show(feedColumn);
-      feedColumn = null;
-    }
-    if (feedColumn && feedColumn.isConnected) return;
-
-    const first = main.querySelector("article");
-    if (!first) return;
-
-    let el = first;
-    while (el.parentElement && el.parentElement !== main) {
-      if (el.parentElement.querySelector(SUGGEST_LINK)) break;
-      el = el.parentElement;
-    }
-    feedColumn = el;
-    hide(el, true);
-  }
-
-  // ---------- 3. Accueil : barre de propositions de profils (à droite) ----------
-  function hideSuggestions() {
+  // ---------- 2. Accueil : colonne de droite hors de <main> ----------
+  // Compte et suggestions de profils sont normalement dans <main> (donc déjà
+  // masqués par le CSS). Si Instagram les place en dehors, on masque la colonne
+  // entière, c'est-à-dire le plus grand conteneur qui n'englobe ni <main> ni
+  // la barre latérale gauche.
+  function hideRightColumn() {
+    const main = document.querySelector("main");
     const anchors = [...document.querySelectorAll(SUGGEST_LINK)];
 
     if (ticks % 5 === 0) {
       // Repli par libellé si le lien "Voir tout" a changé.
-      for (const t of document.querySelectorAll("main span, main h2, main h3")) {
+      for (const t of document.querySelectorAll("span, h2, h3")) {
         if (t.children.length === 0 && SUGGEST_TITLE.test(t.textContent.trim())) {
           anchors.push(t);
         }
@@ -84,28 +68,21 @@
     }
 
     for (const anchor of anchors) {
+      if (main && main.contains(anchor)) continue;
+
       let el = anchor;
-      // Plus petit conteneur qui contient aussi les profils suggérés.
-      while (
-        el.parentElement &&
-        el.parentElement !== document.body &&
-        el.querySelectorAll('a[href^="/"]').length < 4
-      ) {
-        el = el.parentElement;
+      while (el.parentElement && el.parentElement !== document.body) {
+        const p = el.parentElement;
+        if ((main && p.contains(main)) || p.querySelector('nav, [role="navigation"]')) {
+          break;
+        }
+        el = p;
       }
-      if (
-        el === document.body ||
-        el.matches("main, [role='main']") ||
-        el.querySelector("article") ||
-        el.hasAttribute("data-isf")
-      ) {
-        continue;
-      }
-      hide(el, true);
+      if (el !== document.body && !el.hasAttribute("data-isf")) hide(el, true);
     }
   }
 
-  // ---------- 4. Explorer : grille masquée, barre de recherche conservée ----------
+  // ---------- 3. Explorer : grille masquée, barre de recherche conservée ----------
   function hideExploreGrid(main) {
     const tile = main.querySelector('a[href^="/p/"], a[href^="/reel/"]');
     if (!tile) return;
@@ -121,7 +98,7 @@
     if (!el.hasAttribute("data-isf")) hide(el, true);
   }
 
-  // ---------- 5. Entrée "Reels" des menus ----------
+  // ---------- 4. Entrée "Reels" des menus ----------
   function hideReelsNav() {
     for (const a of document.querySelectorAll('a[href="/reels/"]')) {
       let el = a;
@@ -143,30 +120,35 @@
   function tick() {
     if (leaveReels()) return;
     ticks++;
-
-    html.toggleAttribute("data-isf-home", isHome());
-    html.toggleAttribute("data-isf-explore", isExplore());
+    updateFlags();
 
     // Instagram est une application monopage : à chaque changement de page,
     // on rétablit ce qui avait été masqué pour l'ancienne page.
     if (location.pathname !== lastPath) {
       lastPath = location.pathname;
       for (const el of [...routeHidden]) show(el);
-      feedColumn = null;
     }
 
-    const main = document.querySelector("main");
-    if (main) {
-      if (isHome()) hideHomeFeed(main);
-      if (isExplore()) hideExploreGrid(main);
+    if (isHome()) hideRightColumn();
+    if (isExplore()) {
+      const main = document.querySelector("main");
+      if (main) hideExploreGrid(main);
     }
-    if (isHome()) hideSuggestions();
     hideReelsNav();
   }
 
-  html.toggleAttribute("data-isf-home", isHome());
-  html.toggleAttribute("data-isf-explore", isExplore());
+  // Dès qu'Instagram modifie la page, on réagit avant l'affichage suivant
+  // (les rappels de MutationObserver passent avant le rendu) : rien ne clignote.
+  let queued = false;
+  new MutationObserver(() => {
+    if (queued) return;
+    queued = true;
+    queueMicrotask(() => {
+      queued = false;
+      tick();
+    });
+  }).observe(document, { childList: true, subtree: true });
 
   window.addEventListener("popstate", tick);
-  setInterval(tick, 500);
+  setInterval(tick, 1000);
 })();

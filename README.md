@@ -1,4 +1,4 @@
-# No feed – extension Firefox
+# No feed
 
 Masque les feeds et distractions de Reddit, YouTube et Instagram.
 

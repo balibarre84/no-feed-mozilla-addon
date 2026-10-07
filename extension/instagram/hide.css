@@ -1,8 +1,10 @@
-/* ---------- Feed de la page d'accueil ----------
-   data-isf-home est posé sur <html> par content.js uniquement sur "/".
-   Le reste (colonne du feed, stories, suggestions) est traité par content.js. */
+/* ---------- Page d'accueil : rien n'est affiché ----------
+   data-isf-home est posé sur <html> par content.js dès le chargement, et la
+   feuille de style est injectée avant le premier affichage : aucun flash.
+   Tout le contenu central (stories, feed, compte et suggestions) est dans
+   <main> ; seule la barre latérale gauche reste visible. */
 
-html[data-isf-home] main article {
+html[data-isf-home] main {
   display: none !important;
 }
 
