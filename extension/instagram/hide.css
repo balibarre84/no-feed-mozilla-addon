@@ -27,18 +27,18 @@ a[href="/reels/"] {
   display: none !important;
 }
 
-/* ---------- Accueil : mentions de bas de page et choix de la langue ----------
-   L'accueil étant vide, ces blocs (repérés par content.js) remonteraient en
-   haut de la page : on les épingle en bas de la fenêtre, au centre. */
+/* ---------- Mentions de bas de page (Meta, À propos, Aide, Confidentialité…) ----------
+   Liens masqués sans délai sur toutes les pages ; content.js masque ensuite le
+   bloc entier (séparateurs, mention "© Instagram from Meta") et le choix de la langue. */
 
-html[data-isf-home] [data-isf-pin] {
-  position: fixed !important;
-  bottom: 0 !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  width: max-content !important;
-  max-width: min(90vw, 1000px) !important;
-  margin: 0 !important;
-  padding: 12px 16px !important;
-  z-index: 1 !important;
+a[href*="about.meta.com"],
+a[href*="help.instagram.com"],
+a[href*="privacycenter.instagram.com"],
+a[href*="developers.facebook.com"],
+a[href*="meta.com/meta-verified"],
+a[href^="/about/"],
+a[href^="/legal/"],
+a[href*="instagram.com/legal/"],
+a[href^="/explore/locations/"] {
+  display: none !important;
 }

@@ -167,11 +167,21 @@
     }
   }
 
-  // ---------- 5. Accueil : mentions de bas de page et choix de la langue ----------
-  // L'accueil étant vide, ces blocs remonteraient en haut de la page. On les
-  // repère (liens Meta / À propos / Aide / Confidentialité…, sélecteur de langue)
-  // et on les épingle en bas de la fenêtre ; hide.css ne s'applique qu'à l'accueil.
+  // ---------- 5. Mentions de bas de page et choix de la langue (toutes les pages) ----------
+  // On repère le bloc qui regroupe les liens Meta / À propos / Aide /
+  // Confidentialité…, ainsi que le sélecteur de langue, puis on les masque.
+  // hide.css masque déjà les liens eux-mêmes sans délai.
+  const LANGUAGE_LABEL = /langu|idioma|sprache|lingua/i;
   let lastFooterScan = 0;
+
+  function isLanguageSelect(sel) {
+    if (LANGUAGE_LABEL.test(sel.getAttribute("aria-label") || "")) return true;
+    const opts = [...sel.options].map((o) => o.textContent.trim());
+    return (
+      opts.includes("English") &&
+      opts.some((o) => /^(Français|Español|Deutsch|Italiano|Português)/.test(o))
+    );
+  }
 
   // Plus petit bloc de bas de page contenant l'élément, étendu tant qu'il reste
   // un simple bloc de pied de page.
@@ -190,15 +200,18 @@
     return el;
   }
 
-  function pinFooter() {
+  function hideFooter() {
     const now = Date.now();
     if (now - lastFooterScan < 300) return;
     lastFooterScan = now;
 
     const starts = [];
-    const links = document.querySelectorAll(FOOTER_LINKS);
+
+    // Blocs de liens pas encore masqués (il peut y en avoir un nouveau après une navigation).
+    const links = [...document.querySelectorAll(FOOTER_LINKS)].filter(
+      (l) => !l.closest("[data-isf]")
+    );
     if (links.length >= 3) {
-      // Plus petit conteneur regroupant au moins trois de ces liens.
       let el = links[0];
       while (
         el.parentElement &&
@@ -209,28 +222,17 @@
       }
       starts.push(el);
     }
-    for (const sel of document.querySelectorAll("select")) starts.push(sel);
 
-    const blocks = new Set();
+    // Sélecteur de langue (jamais dans le contenu de la page ni dans le menu).
+    for (const sel of document.querySelectorAll("select")) {
+      if (sel.closest("[data-isf], main, nav, [role='main']")) continue;
+      if (isLanguageSelect(sel)) starts.push(sel);
+    }
+
     for (const start of starts) {
       if (start === document.body) continue;
-      if (start.tagName === "SELECT" && start.closest("main, nav, [role='main']")) continue;
       const block = footerBlock(start);
-      if (block !== document.body) blocks.add(block);
-    }
-    // On n'épingle que les blocs les plus grands (pas un bloc déjà inclus dans un autre).
-    const pinned = [...blocks].filter(
-      (el) => ![...blocks].some((o) => o !== el && o.contains(el))
-    );
-    // Si les liens et le choix de la langue sont dans deux blocs distincts, on les
-    // empile : la langue tout en bas, les liens juste au-dessus.
-    const hasSelect = (el) => el.tagName === "SELECT" || !!el.querySelector("select");
-    pinned.sort((a, b) => Number(hasSelect(b)) - Number(hasSelect(a)));
-    let offset = 0;
-    for (const el of pinned) {
-      el.setAttribute("data-isf-pin", "");
-      el.style.setProperty("bottom", offset + "px", "important");
-      offset += el.getBoundingClientRect().height;
+      if (block !== document.body && !block.hasAttribute("data-isf")) hide(block, false);
     }
   }
 
@@ -248,10 +250,6 @@
     if (location.pathname !== lastPath) {
       lastPath = location.pathname;
       for (const el of [...routeHidden]) show(el);
-      for (const el of document.querySelectorAll("[data-isf-pin]")) {
-        el.removeAttribute("data-isf-pin");
-        el.style.removeProperty("bottom");
-      }
     }
 
     if (isHome()) hideRightColumn();
@@ -260,7 +258,7 @@
       if (main) hideExplore(main);
     }
     hideReelsNav();
-    if (isHome()) pinFooter();
+    hideFooter();
   }
 
   // Dès qu'Instagram modifie la page, on réagit avant l'affichage suivant

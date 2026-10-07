@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "No feed",
   "version": "1.0.0",
-  "description": "Reddit : feeds, suggestions de recherche, boutons et barre latérale masqués. YouTube : feed d'accueil, barre latérale et Shorts masqués. Instagram : accueil, feed, Reels et grille Explorer masqués.",
+  "description": "Reddit : feeds, suggestions de recherche, boutons et barre latérale masqués. YouTube : feed d'accueil, barre latérale et Shorts masqués. Instagram : accueil, feed, Reels, grille Explorer et mentions de bas de page masqués.",
   "icons": {
     "48": "icon.svg",
     "96": "icon.svg"
