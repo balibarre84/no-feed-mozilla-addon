@@ -1,0 +1,41 @@
+name: Release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  sign:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+
+      - name: Version issue du tag
+        run: |
+          V="${GITHUB_REF_NAME#v}"
+          jq --arg v "$V" '.version=$v' extension/manifest.json > m.tmp
+          mv m.tmp extension/manifest.json
+
+      - name: Signature Mozilla
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        run: npx --yes web-ext sign --channel unlisted --source-dir extension --artifacts-dir dist
+
+      - name: Release et updates.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="${GITHUB_REF_NAME#v}"
+          ID=$(jq -r '.browser_specific_settings.gecko.id' extension/manifest.json)
+          mv dist/*.xpi "sans-feed-$V.xpi"
+          gh release create "$GITHUB_REF_NAME" "sans-feed-$V.xpi" --title "$GITHUB_REF_NAME" --notes ""
+          jq -n --arg id "$ID" --arg v "$V" \
+            --arg url "https://github.com/${{ github.repository }}/releases/download/$GITHUB_REF_NAME/sans-feed-$V.xpi" \
+            '{addons:{($id):{updates:[{version:$v,update_link:$url}]}}}' > updates.json
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add updates.json
+          git commit -m "updates.json $V"
+          git push origin HEAD:main

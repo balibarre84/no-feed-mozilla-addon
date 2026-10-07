@@ -1,0 +1,73 @@
+/* ---------- Pages entièrement "feed" ----------
+   data-rsf-feed est posé sur <html> par content.js sur l'accueil,
+   r/popular, r/all et News. */
+
+html[data-rsf-feed] shreddit-app .main-container,
+html[data-rsf-feed] shreddit-app #main-content,
+html[data-rsf-feed] shreddit-feed,
+html[data-rsf-feed] shreddit-gallery-carousel,
+html[data-rsf-feed] #siteTable /* old.reddit.com */ {
+  display: none !important;
+}
+
+/* ---------- Fil des subreddits généralistes ----------
+   data-rsf-sub est posé sur la page de liste des subreddits de subreddits.js.
+   L'en-tête et la colonne d'infos du subreddit restent visibles. */
+
+html[data-rsf-sub] shreddit-feed,
+html[data-rsf-sub] shreddit-gallery-carousel,
+html[data-rsf-sub] #siteTable /* old.reddit.com */ {
+  display: none !important;
+}
+
+/* ---------- Suggestions de la barre de recherche ---------- */
+
+#search-dropdown-results-container,
+#section_0_pipeline_1_trending_query,
+#section_0_pipeline_1_trending_query ~ *,
+#reddit-trending-searches-partial-container {
+  display: none !important;
+}
+
+/* ---------- Bouton "Créer un post" de la barre supérieure ---------- */
+
+create-post-entry-point-wrapper,
+reddit-header-large #create-post,
+reddit-header-small #create-post,
+header [data-testid="create-post"],
+header a[href$="/submit"],
+header a[href*="/submit?"],
+header a[href*="/submit/"] {
+  display: none !important;
+}
+
+/* ---------- Boutons "Advertise" et "Open chat" de la barre supérieure ---------- */
+
+#header-action-item-advertise-button,
+#header-action-item-chat-button,
+header [id*="advertise" i],
+header [id*="chat-button" i],
+header a[href*="ads.reddit.com"],
+header a[href*="/chat"],
+header a[href*="chat.reddit.com"],
+faceplate-tracker[noun="advertise"],
+faceplate-tracker[noun="chat"],
+faceplate-tracker[source="advertise"] {
+  display: none !important;
+}
+
+/* ---------- Barre latérale gauche ---------- */
+
+#left-sidebar-container,
+#left-sidebar,
+reddit-sidebar-nav,
+flex-left-nav-container,
+#flex-left-nav-container,
+#navbar-menu-button /* bouton hamburger qui la rouvre */ {
+  display: none !important;
+}
+
+/* Récupère la largeur libérée par la barre latérale. */
+shreddit-app .grid-container.grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+}

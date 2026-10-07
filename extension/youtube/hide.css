@@ -1,0 +1,67 @@
+/* ---------- Feed de la page d'accueil ----------
+   La barre de recherche (masthead) reste visible. */
+
+ytd-browse[page-subtype="home"] {
+  display: none !important;
+}
+
+/* ---------- Barre latérale gauche ---------- */
+
+tp-yt-app-drawer,
+#guide,
+ytd-guide-renderer,
+ytd-mini-guide-renderer,
+#guide-button,
+ytd-masthead #guide-button {
+  display: none !important;
+}
+
+/* Récupère la place laissée par la barre latérale. */
+ytd-app {
+  --ytd-mini-guide-width: 0px !important;
+  --ytd-persistent-guide-width: 0px !important;
+}
+
+ytd-page-manager {
+  margin-left: 0 !important;
+}
+
+/* ---------- Shorts ----------
+   Étagères de Shorts (accueil, recherche, abonnements, chaînes, vidéos). */
+
+ytd-reel-shelf-renderer,
+ytd-rich-shelf-renderer[is-shorts],
+ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-shorts]),
+ytd-rich-section-renderer:has(ytm-shorts-lockup-view-model),
+ytd-rich-section-renderer:has(ytm-shorts-lockup-view-model-v2),
+grid-shelf-view-model:has(ytm-shorts-lockup-view-model),
+grid-shelf-view-model:has(ytm-shorts-lockup-view-model-v2),
+ytd-item-section-renderer:has(> #contents > ytd-reel-shelf-renderer:only-child),
+ytm-shorts-lockup-view-model,
+ytm-shorts-lockup-view-model-v2,
+ytd-reel-item-renderer {
+  display: none !important;
+}
+
+/* Vidéos individuelles qui sont des Shorts (liens /shorts/…). */
+
+ytd-video-renderer:has(a[href*="/shorts/"]),
+ytd-grid-video-renderer:has(a[href*="/shorts/"]),
+ytd-compact-video-renderer:has(a[href*="/shorts/"]),
+ytd-playlist-video-renderer:has(a[href*="/shorts/"]),
+ytd-rich-item-renderer:has(a[href*="/shorts/"]),
+yt-lockup-view-model:has(a[href*="/shorts/"]),
+ytd-video-renderer:has(ytd-thumbnail-overlay-time-status-renderer[overlay-style="SHORTS"]),
+ytd-grid-video-renderer:has(ytd-thumbnail-overlay-time-status-renderer[overlay-style="SHORTS"]),
+ytd-compact-video-renderer:has(ytd-thumbnail-overlay-time-status-renderer[overlay-style="SHORTS"]),
+ytd-rich-item-renderer:has(ytd-thumbnail-overlay-time-status-renderer[overlay-style="SHORTS"]) {
+  display: none !important;
+}
+
+/* Entrée "Shorts" des menus (en plus du repli par texte de content.js). */
+
+ytd-guide-entry-renderer:has(a[title="Shorts"]),
+ytd-mini-guide-entry-renderer[aria-label="Shorts"],
+a[href^="/shorts"]:not([href^="/shorts/"]) {
+  display: none !important;
+}
