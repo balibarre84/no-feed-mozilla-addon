@@ -26,6 +26,7 @@
   function updateFlags() {
     html.toggleAttribute("data-isf-home", isHome());
     html.toggleAttribute("data-isf-explore", isExplore());
+    html.toggleAttribute("data-isf-direct", isDirect());
   }
   updateFlags();
 
@@ -132,28 +133,85 @@
 
     for (const t of main.querySelectorAll("h1, h2, h3, span, div")) {
       if (t.children.length !== 0 || t.hasAttribute("data-isf")) continue;
-      const text = t.textContent.trim();
-      if (EXPLORE_TITLES.test(text) || (text.length < 80 && NOT_PERSONALIZED.test(text))) {
-        hide(t, true);
+      if (EXPLORE_TITLES.test(t.textContent.trim())) hide(t, true);
+    }
+
+    // "Non personnalisé" : uniquement dans le corps de la page (<main>), jamais
+    // dans la barre latérale ni dans une fenêtre. On cherche le texte lui-même,
+    // même s'il est mêlé à d'autres éléments (lien "En savoir plus"…), puis on
+    // masque le plus petit bloc qui ne contient que cette mention.
+    const walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT);
+    for (let node; (node = walker.nextNode()); ) {
+      if (node.nodeValue.length >= 120 || !NOT_PERSONALIZED.test(node.nodeValue)) continue;
+      let el = node.parentElement;
+      if (!el || el.hasAttribute("data-isf") || el.closest('[role="dialog"]')) continue;
+      while (
+        el.parentElement &&
+        el.parentElement !== main &&
+        el.parentElement.textContent.trim().length < 120 &&
+        !el.parentElement.querySelector('input, a[href^="/p/"], a[href^="/reel/"]')
+      ) {
+        el = el.parentElement;
       }
+      hide(el, true);
     }
   }
 
   // ---------- 4. Messagerie : section "Notes" de la colonne des conversations ----------
-  // On repère le libellé, puis on masque le bloc situé au-dessus de la liste des
-  // conversations. Si la liste arrive après coup à l'intérieur de ce qu'on a
-  // masqué, on rétablit et on recalcule.
-  let notesBlock = null;
+  // Deux repères, l'un ou l'autre suffit :
+  //  - les classes du bloc (les classes d'Instagram décrivent chacune une seule
+  //    règle de style, par exemple "x78zum5" = display:flex : elles restent
+  //    stables d'une version à l'autre) ; le bloc est celui qui ne contient pas
+  //    de conversation mais précède la liste des conversations ;
+  //  - le libellé ("Notes", "Votre note"…), en remontant jusqu'au bloc qui
+  //    précède la liste.
+  // Si la liste arrive après coup à l'intérieur de ce qu'on a masqué, on
+  // rétablit et on recalcule.
+  const NOTES_CLASSES = [
+    "x1qjc9v5", "x9f619", "x78zum5", "xdt5ytf", "xln7xf2",
+    "xk390pu", "x5yr21d", "x1n2onr6", "x11njtxf", "xh8yej3",
+  ];
+  const NOTES_SELECTOR = "." + NOTES_CLASSES.join(".");
+  const notesHidden = new Set();
 
   function hideDirectNotes() {
-    if (notesBlock && notesBlock.querySelector(THREAD_LINK)) {
-      show(notesBlock);
-      notesBlock = null;
+    for (const el of [...notesHidden]) {
+      if (!el.isConnected) {
+        notesHidden.delete(el);
+      } else if (el.querySelector(THREAD_LINK)) {
+        show(el);
+        notesHidden.delete(el);
+      }
     }
-    if (notesBlock && notesBlock.isConnected) return;
-    notesBlock = null;
 
-    const candidates = document.querySelectorAll("span, h1, h2, h3, div[aria-label], button[aria-label]");
+    const firstThread = document.querySelector(THREAD_LINK);
+
+    // a) par les classes : avant la liste des conversations, sans conversation
+    //    ni champ de saisie à l'intérieur, avec des avatars.
+    if (firstThread) {
+      const found = [...document.querySelectorAll(NOTES_SELECTOR)].filter(
+        (el) =>
+          !el.hasAttribute("data-isf") &&
+          !el.closest("nav, [role='navigation']") &&
+          !el.querySelector(THREAD_LINK + ", input, textarea, [contenteditable]") &&
+          el.querySelector("img") &&
+          el.parentElement &&
+          el.parentElement.contains(firstThread) &&
+          el.compareDocumentPosition(firstThread) & Node.DOCUMENT_POSITION_FOLLOWING
+      );
+      // On garde les blocs les plus grands (on ignore ceux qui en contiennent déjà un).
+      for (const el of found) {
+        if (found.some((o) => o !== el && o.contains(el))) continue;
+        hide(el, true);
+        notesHidden.add(el);
+      }
+    }
+
+    // b) par le libellé
+    if (notesHidden.size) return;
+    const candidates = document.querySelectorAll(
+      "span, h1, h2, h3, div[aria-label], button[aria-label]"
+    );
     for (const t of candidates) {
       if (t.closest("nav, [role='navigation']") || t.hasAttribute("data-isf")) continue;
       if (t.children.length !== 0 && !t.hasAttribute("aria-label")) continue;
@@ -175,8 +233,8 @@
         steps++;
       }
       if (el === document.body || el.matches("main, [role='main']")) continue;
-      notesBlock = el;
       hide(el, true);
+      notesHidden.add(el);
       return;
     }
   }
@@ -246,7 +304,7 @@
     if (location.pathname !== lastPath) {
       lastPath = location.pathname;
       for (const el of [...routeHidden]) show(el);
-      notesBlock = null;
+      notesHidden.clear();
     }
 
     if (isHome()) hideRightColumn();
@@ -273,4 +331,5 @@
 
   window.addEventListener("popstate", tick);
   setInterval(tick, 1000);
+  tick();
 })();

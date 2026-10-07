@@ -21,6 +21,15 @@ html[data-isf-explore] svg[aria-label="Chargement…"] {
   display: none !important;
 }
 
+/* ---------- Messagerie : section "Notes" au-dessus de la liste des conversations ----------
+   Bloc (classes repérées dans l'inspecteur) qui précède, parmi ses frères, la
+   liste des conversations, sans conversation ni champ de saisie à l'intérieur.
+   content.js applique la même règle quand la structure est différente. */
+
+html[data-isf-direct] .x1qjc9v5.x9f619.x78zum5.xdt5ytf.xln7xf2.xk390pu.x5yr21d.x1n2onr6.x11njtxf.xh8yej3:has(img):not(:has(a[href^="/direct/t/"], input, textarea)):has(~ * a[href^="/direct/t/"]) {
+  display: none !important;
+}
+
 /* ---------- Reels dans la barre latérale gauche (et la barre mobile) ---------- */
 
 a[href="/reels/"] {
