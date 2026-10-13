@@ -42,3 +42,12 @@ a[href*="instagram.com/legal/"],
 a[href^="/explore/locations/"] {
   display: none !important;
 }
+
+/* Bloc de bas de page sur l'accueil : masqué dès le premier affichage, avant
+   que content.js ait repéré les liens (sinon il flashe en haut de la page). */
+
+html[data-isf-home] footer,
+html[data-isf-home] [role="contentinfo"],
+html[data-isf-home] main ~ * {
+  display: none !important;
+}

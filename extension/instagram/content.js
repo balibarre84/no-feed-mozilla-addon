@@ -173,6 +173,7 @@
   // hide.css masque déjà les liens eux-mêmes sans délai.
   const LANGUAGE_LABEL = /langu|idioma|sprache|lingua/i;
   let lastFooterScan = 0;
+  let footerTimer = 0;
 
   function isLanguageSelect(sel) {
     if (LANGUAGE_LABEL.test(sel.getAttribute("aria-label") || "")) return true;
@@ -202,7 +203,17 @@
 
   function hideFooter() {
     const now = Date.now();
-    if (now - lastFooterScan < 300) return;
+    // Limité à un passage toutes les 300 ms, mais le dernier est toujours
+    // rattrapé : sinon le bloc apparaîtrait jusqu'au tick suivant (1 s).
+    if (now - lastFooterScan < 300) {
+      if (!footerTimer) {
+        footerTimer = setTimeout(() => {
+          footerTimer = 0;
+          hideFooter();
+        }, 300 - (now - lastFooterScan));
+      }
+      return;
+    }
     lastFooterScan = now;
 
     const starts = [];

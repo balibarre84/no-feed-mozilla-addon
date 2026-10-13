@@ -21,6 +21,8 @@
     const path = location.pathname;
     root.toggleAttribute("data-rsf-feed", FEED_PATH.test(path));
 
+    root.toggleAttribute("data-rsf-search", /^\/search(?:\/|$)/i.test(path));
+
     const m = SUB_LISTING.exec(path);
     root.toggleAttribute(
       "data-rsf-sub",
@@ -130,7 +132,17 @@
   // Dès le chargement, pour que rien n'apparaisse à l'écran.
   updateFlags();
 
-  // Reddit change de page sans recharger et monte ses composants en différé.
+  // Reddit change de page sans recharger : on met les drapeaux à jour dès que
+  // l'adresse change, avant le rendu suivant, sans attendre le prochain tick.
+  let lastPath = location.pathname + location.search;
+  new MutationObserver(() => {
+    const cur = location.pathname + location.search;
+    if (cur === lastPath) return;
+    lastPath = cur;
+    updateFlags();
+  }).observe(document, { childList: true, subtree: true });
+
+  // Reddit monte ses composants en différé.
   setInterval(tick, 400);
   document.addEventListener("DOMContentLoaded", tick);
   window.addEventListener("popstate", tick);

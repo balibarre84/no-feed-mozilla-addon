@@ -20,6 +20,16 @@ html[data-rsf-sub] #siteTable /* old.reddit.com */ {
   display: none !important;
 }
 
+/* ---------- Page de recherche ----------
+   data-rsf-search est posé sur <html> sur /search : le fil de l'accueil, encore
+   monté pendant la transition, ne doit jamais apparaître derrière les résultats. */
+
+html[data-rsf-search] shreddit-feed,
+html[data-rsf-search] shreddit-gallery-carousel,
+html[data-rsf-search] #siteTable:not(.search-result-listing) /* old.reddit.com */ {
+  display: none !important;
+}
+
 /* ---------- Suggestions de la barre de recherche ---------- */
 
 #search-dropdown-results-container,
