@@ -5,6 +5,20 @@ ytd-browse[page-subtype="home"] {
   display: none !important;
 }
 
+/* Placeholders (squelettes) de chargement de l'accueil : data-ysf-home est posé
+   sur <html> par content.js dès que l'adresse est l'accueil, avant même que
+   ytd-browse ne reçoive son page-subtype. */
+
+#home-page-skeleton,
+html[data-ysf-home] ytd-browse:not([page-subtype]),
+html[data-ysf-home] ytd-browse ytd-ghost-grid-renderer,
+html[data-ysf-home] ytd-browse ytd-rich-grid-renderer,
+html[data-ysf-home] ytd-browse ytd-continuation-item-renderer,
+html[data-ysf-home] ytd-browse yt-chip-cloud-renderer,
+html[data-ysf-home] ytd-feed-filter-chip-bar-renderer {
+  display: none !important;
+}
+
 /* ---------- Barre latérale gauche ---------- */
 
 tp-yt-app-drawer,
