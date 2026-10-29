@@ -1,0 +1,24 @@
+name: Publish AMO
+# Soumet une nouvelle version à la fiche publique sur addons.mozilla.org
+# (relecture Mozilla, puis mise à jour automatique des utilisateurs).
+# Tag amo-vX.Y.Z  ->  version X.Y.Z. Distinct du tag vX.Y.Z (canal non répertorié) :
+# AMO refuse qu'un même numéro de version serve deux fois.
+on:
+  push:
+    tags: ["amo-v*"]
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build (sans update_url, version issue du tag)
+        run: |
+          sh scripts/build-amo.sh no-feed-amo.zip "${GITHUB_REF_NAME#amo-v}"
+          unzip -q no-feed-amo.zip -d build
+
+      - name: Soumission à AMO (canal répertorié)
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        run: npx --yes web-ext sign --channel listed --approval-timeout 0 --source-dir build --artifacts-dir dist
