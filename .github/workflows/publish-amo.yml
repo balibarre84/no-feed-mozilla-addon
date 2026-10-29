@@ -6,6 +6,11 @@ name: Publish AMO
 on:
   push:
     tags: ["amo-v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Numéro de version à soumettre (ex. 1.0.2)
+        required: true
 jobs:
   submit:
     runs-on: ubuntu-latest
@@ -13,8 +18,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build (sans update_url, version issue du tag)
+        env:
+          VERSION: ${{ inputs.version || '' }}
         run: |
-          sh scripts/build-amo.sh no-feed-amo.zip "${GITHUB_REF_NAME#amo-v}"
+          sh scripts/build-amo.sh no-feed-amo.zip "${VERSION:-${GITHUB_REF_NAME#amo-v}}"
           unzip -q no-feed-amo.zip -d build
 
       - name: Soumission à AMO (canal répertorié)
