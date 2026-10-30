@@ -22,6 +22,16 @@
 
   if (leaveShorts()) return;
 
+  // ---------- 1 bis. Accueil : drapeau posé dès le chargement ----------
+  // Permet à hide.css de masquer les squelettes de chargement du feed.
+  function updateHomeFlag() {
+    document.documentElement.toggleAttribute(
+      "data-ysf-home",
+      /^\/(?:feed\/(?:explore|trending))?\/?$/i.test(location.pathname)
+    );
+  }
+  updateHomeFlag();
+
   // ---------- 2. Repli par texte ----------
   // Onglet "Shorts" des chaînes, filtre "Shorts" des recherches, entrées de menu :
   // ces éléments n'ont pas de lien /shorts/ exploitable en CSS, on les repère
@@ -55,9 +65,11 @@
   // interne et régulièrement, car les composants se montent en différé.
   function tick() {
     if (leaveShorts()) return;
+    updateHomeFlag();
     hideShortsLabels();
   }
 
+  document.addEventListener("yt-navigate-start", updateHomeFlag);
   document.addEventListener("yt-navigate-start", tick);
   document.addEventListener("yt-navigate-finish", tick);
   window.addEventListener("popstate", tick);

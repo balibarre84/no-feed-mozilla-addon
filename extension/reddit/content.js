@@ -17,7 +17,83 @@
 
   const root = document.documentElement;
 
+  // Attente d'une recherche : posée dès que l'utilisateur la lance (Entrée,
+  // clic sur une suggestion ou la loupe), avant que l'adresse ne change, puis
+  // maintenue sur /search jusqu'à ce que les résultats soient montés (ou 1,5 s).
+  // Pendant ce temps, hide.css masque tout le contenu de la page : rien de
+  // l'accueil (menus, onglets « Pour toi / Abonné ») ne doit apparaître.
+  let waitUntil = 0;
+  let waitedPath = "";
+
+  function startWait() {
+    waitUntil = Date.now() + 3000;
+    waitedPath = "";
+    root.setAttribute("data-rsf-wait", "");
+  }
+
+  function updateWait() {
+    const onSearch = /^\/search(?:\/|$)/i.test(location.pathname);
+    if (!root.hasAttribute("data-rsf-wait")) {
+      // Arrivée directe ou navigation interne vers /search sans interaction.
+      if (onSearch && waitedPath !== location.pathname + location.search) {
+        waitedPath = location.pathname + location.search;
+        waitUntil = Date.now() + 1500;
+        root.setAttribute("data-rsf-wait", "");
+      }
+      return;
+    }
+    if (onSearch) {
+      if (waitedPath !== location.pathname + location.search) {
+        waitedPath = location.pathname + location.search;
+        waitUntil = Math.min(waitUntil, Date.now() + 1500);
+      }
+      const ready = document.querySelector(
+        '#main-content [data-testid="search-results"], #main-content search-telemetry-tracker, ' +
+          '#main-content a[data-testid="post-title"]'
+      );
+      if (ready) root.removeAttribute("data-rsf-wait");
+    }
+    if (Date.now() > waitUntil) root.removeAttribute("data-rsf-wait");
+  }
+
+  // La recherche vit dans un shadow DOM : les événements composés remontent
+  // jusqu'au document avec l'hôte comme cible, on lit donc composedPath().
+  const SEARCH_HOST = /^(?:REDDIT-SEARCH-\w+|FACEPLATE-SEARCH-INPUT)$/;
+
+  function fromSearch(e) {
+    return e.composedPath().some((n) => n instanceof Element && SEARCH_HOST.test(n.tagName));
+  }
+
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      if (e.key === "Enter" && fromSearch(e)) startWait();
+    },
+    true
+  );
+
+  document.addEventListener(
+    "click",
+    (e) => {
+      if (!fromSearch(e)) return;
+      const hit = e.composedPath().find(
+        (n) =>
+          n instanceof Element &&
+          (/^A$/i.test(n.tagName) && /\/search/i.test(n.getAttribute("href") || "") ||
+            (/^BUTTON$/i.test(n.tagName) && n.getAttribute("type") === "submit") ||
+            /search-?(?:button|icon)|submit/i.test(n.id || n.getAttribute("aria-label") || ""))
+      );
+      if (hit) startWait();
+    },
+    true
+  );
+
+  document.addEventListener("submit", (e) => {
+    if (fromSearch(e)) startWait();
+  }, true);
+
   function updateFlags() {
+    updateWait();
     const path = location.pathname;
     root.toggleAttribute("data-rsf-feed", FEED_PATH.test(path));
 
