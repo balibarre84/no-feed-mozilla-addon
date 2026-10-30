@@ -30,6 +30,20 @@ html[data-rsf-search] #siteTable:not(.search-result-listing) /* old.reddit.com *
   display: none !important;
 }
 
+/* Attente d'une recherche : data-rsf-wait est posé dès que la recherche est
+   lancée et retiré quand les résultats sont montés. Tout le contenu de la page
+   (menus, onglets « Pour toi / Abonné ») est masqué entre-temps. */
+
+html[data-rsf-wait] shreddit-app .main-container,
+html[data-rsf-wait] shreddit-app #main-content,
+html[data-rsf-wait] shreddit-app main,
+html[data-rsf-wait] #subgrid-container,
+html[data-rsf-wait] shreddit-feed-switcher,
+html[data-rsf-wait] shreddit-sort-dropdown,
+html[data-rsf-wait] #siteTable:not(.search-result-listing) {
+  visibility: hidden !important;
+}
+
 /* ---------- Suggestions de la barre de recherche ---------- */
 
 #search-dropdown-results-container,
