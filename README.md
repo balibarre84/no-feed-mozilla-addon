@@ -19,7 +19,7 @@ Le workflow `.github/workflows/release.yml` fixe la version d'après le tag, fai
 ## Mettre à jour la fiche publique AMO
 
 ```
-git tag amo-v1.0.0 && git push --tags
+git tag amo-v1.0.3 && git push --tags
 ```
 
 Le workflow `.github/workflows/publish-amo.yml` construit l'extension sans `update_url`, avec la version du tag, et la soumet à la fiche publique sur addons.mozilla.org. Elle passe ensuite par la relecture de Mozilla. Le numéro de version doit être nouveau (différent de tout tag `v*`). Sans automatisation, `scripts/build-amo.sh` produit le zip à déposer à la main.
